@@ -1,7 +1,8 @@
 {
     "description": "Synchronize properties between dimensions automatically",
-    "type": "neos-package",
     "name": "ttree/dimensionkeeper",
+    "type": "neos-package",
+    "license": "MIT",
     "require": {
         "neos/content-repository": "^3.0"
     },
