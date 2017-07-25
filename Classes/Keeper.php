@@ -2,7 +2,10 @@
 namespace Ttree\DimensionKeeper;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\SystemLoggerInterface;
 
 /**
  * @Flow\Scope("singleton")
@@ -10,6 +13,18 @@ use Neos\Flow\Annotations as Flow;
 class Keeper
 {
     const CONFIGURATION_PATH = 'options.TtreeDimensionKeeper:Properties';
+
+    /**
+     * @var SystemLoggerInterface
+     * @Flow\Inject
+     */
+    protected $systemLogger;
+
+    /**
+     * @var ContentDimensionCombinator
+     * @Flow\Inject
+     */
+    protected $contentDimensionCombinator;
 
     protected $tracker = [];
 
@@ -19,15 +34,33 @@ class Keeper
             return;
         }
 
-        $key = md5($node->getIdentifier() . $propertyName . \json_encode($newValue));
+        $key = md5($node->getIdentifier() . $propertyName . \serialize($newValue));
         if (isset($this->tracker[$key]) && $this->tracker[$key] === true) {
+            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $node->getContextPath()]), \LOG_DEBUG);
             return;
         }
 
-        /** @var NodeInterface $nodeVariant */
-        foreach ($node->getContext()->getNodeVariantsByIdentifier($node->getIdentifier()) as $nodeVariant) {
+        $query = new FlowQuery([$node]);
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensions) {
+            $nodeVariant = $this->nodeVariant($query, $dimensions);
+            if ($nodeVariant === null) {
+                continue;
+            }
+            $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG);
             $nodeVariant->setProperty($propertyName, $newValue);
         }
+    }
+
+    protected function nodeVariant(FlowQuery $query, array $dimensions): ?NodeInterface
+    {
+        $targetDimensions = array_map(function ($dimensionValues) {
+            return array_shift($dimensionValues);
+        }, $dimensions);
+
+        return $query->context([
+            'dimensions' => $dimensions,
+            'targetDimensions' => $targetDimensions
+        ])->get(0);
     }
 
     protected function managedProperties(NodeInterface $node, $propertyName)
