@@ -39,7 +39,7 @@ class Keeper
 
     public function sync(NodeInterface $node, string $propertyName, $oldValue, $newValue)
     {
-        if (!$this->managedProperties($node, $propertyName)) {
+        if ($this->enabled !== true || !$this->managedProperties($node, $propertyName)) {
             return;
         }
 
