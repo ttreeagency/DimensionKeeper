@@ -26,7 +26,16 @@ class Keeper
      */
     protected $contentDimensionCombinator;
 
+    /**
+     * @var array
+     */
     protected $tracker = [];
+
+    /**
+     * @var bool
+     * @Flow\InjectConfiguration(path="enabled")
+     */
+    protected $enabled = true;
 
     public function sync(NodeInterface $node, string $propertyName, $oldValue, $newValue)
     {
@@ -51,6 +60,16 @@ class Keeper
         }
 
         $this->tracker[$key] = true;
+    }
+
+    public function skip(\Closure $closure)
+    {
+        $previousState = $this->enabled;
+        try {
+            $closure();
+        } finally {
+            $this->enabled = $previousState;
+        }
     }
 
     protected function nodeVariant(FlowQuery $query, array $dimensions): ?NodeInterface
