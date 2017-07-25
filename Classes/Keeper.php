@@ -34,7 +34,7 @@ class Keeper
             return;
         }
 
-        $key = md5($node->getIdentifier() . $propertyName . \serialize($newValue));
+        $key = md5($node->getContextPath() . $propertyName . \serialize($newValue));
         if (isset($this->tracker[$key]) && $this->tracker[$key] === true) {
             $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $node->getContextPath()]), \LOG_DEBUG);
             return;
@@ -49,6 +49,8 @@ class Keeper
             $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG);
             $nodeVariant->setProperty($propertyName, $newValue);
         }
+
+        $this->tracker[$key] = true;
     }
 
     protected function nodeVariant(FlowQuery $query, array $dimensions): ?NodeInterface
