@@ -43,20 +43,23 @@ class Keeper
             return;
         }
 
-        $key = md5($node->getContextPath() . $propertyName . \serialize($newValue));
+        $originalContextPath = $node->getContextPath();
+        $key = md5($originalContextPath . $propertyName . \serialize($newValue));
         if (isset($this->tracker[$key]) && $this->tracker[$key] === true) {
-            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $node->getContextPath()]), \LOG_DEBUG);
+            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $originalContextPath]), \LOG_DEBUG);
             return;
         }
 
         $query = new FlowQuery([$node]);
+        $cache = [];
         foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensions) {
             $nodeVariant = $this->nodeVariant($query, $dimensions);
-            if ($nodeVariant === null) {
+            if ($nodeVariant === null || $nodeVariant->getContextPath() === $originalContextPath || (isset($cache[$nodeVariant->getContextPath()]) && $cache[$nodeVariant->getContextPath()] === true)) {
                 continue;
             }
             $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG);
             $nodeVariant->setProperty($propertyName, $newValue);
+            $cache[$nodeVariant->getContextPath()] = true;
         }
 
         $this->tracker[$key] = true;
