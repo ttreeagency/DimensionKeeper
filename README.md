@@ -10,8 +10,8 @@ Installation
 Configuration
 -------------
 
-First you need to edit your Node Type configuration (NodeTypes.yaml), the example bellow is for
-a course (Workshop) that can contains many sessions (Course Instance in the Schema.org terminology). 
+First, you need to edit your Node Type configuration (NodeTypes.yaml), the example below is for
+a course (Workshop) that may contain many sessions (Course Instance in the Schema.org terminology). 
 Each Session can have a dedicated Location:
 
     'Your.Package:Workshop':
