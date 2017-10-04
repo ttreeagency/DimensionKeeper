@@ -3,7 +3,6 @@ namespace Ttree\DimensionKeeper;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
-use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\SystemLoggerInterface;
 
@@ -46,18 +45,19 @@ class Keeper
         $originalContextPath = $node->getContextPath();
         $key = md5($originalContextPath . $propertyName . \serialize($newValue));
         if (isset($this->tracker[$key]) && $this->tracker[$key] === true) {
-            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $originalContextPath]), \LOG_DEBUG);
+            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $originalContextPath]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
             return;
         }
 
-        $query = new FlowQuery([$node]);
         $cache = [];
-        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensions) {
-            $nodeVariant = $this->nodeVariant($query, $dimensions);
-            if ($nodeVariant === null || $nodeVariant->getContextPath() === $originalContextPath || (isset($cache[$nodeVariant->getContextPath()]) && $cache[$nodeVariant->getContextPath()] === true)) {
+        /** @var NodeInterface $nodeVariant */
+        foreach ($node->getOtherNodeVariants() as $nodeVariant) {
+            if (isset($cache[$nodeVariant->getContextPath()]) && $cache[$nodeVariant->getContextPath()] === true) {
                 continue;
             }
-            $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG);
+
+            $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
+
             $nodeVariant->setProperty($propertyName, $newValue);
             $cache[$nodeVariant->getContextPath()] = true;
         }
@@ -73,18 +73,6 @@ class Keeper
         } finally {
             $this->enabled = $previousState;
         }
-    }
-
-    protected function nodeVariant(FlowQuery $query, array $dimensions): ?NodeInterface
-    {
-        $targetDimensions = array_map(function ($dimensionValues) {
-            return array_shift($dimensionValues);
-        }, $dimensions);
-
-        return $query->context([
-            'dimensions' => $dimensions,
-            'targetDimensions' => $targetDimensions
-        ])->get(0);
     }
 
     protected function managedProperties(NodeInterface $node, $propertyName)
