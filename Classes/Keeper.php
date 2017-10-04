@@ -2,7 +2,6 @@
 namespace Ttree\DimensionKeeper;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\SystemLoggerInterface;
 
@@ -18,12 +17,6 @@ class Keeper
      * @Flow\Inject
      */
     protected $systemLogger;
-
-    /**
-     * @var ContentDimensionCombinator
-     * @Flow\Inject
-     */
-    protected $contentDimensionCombinator;
 
     /**
      * @var array
@@ -49,18 +42,10 @@ class Keeper
             return;
         }
 
-        $cache = [];
-        /** @var NodeInterface $nodeVariant */
-        foreach ($node->getOtherNodeVariants() as $nodeVariant) {
-            if (isset($cache[$nodeVariant->getContextPath()]) && $cache[$nodeVariant->getContextPath()] === true) {
-                continue;
-            }
-
+        \array_map(function (NodeInterface $nodeVariant) use ($propertyName, $newValue) {
             $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
-
             $nodeVariant->setProperty($propertyName, $newValue);
-            $cache[$nodeVariant->getContextPath()] = true;
-        }
+        }, $node->getOtherNodeVariants());
 
         $this->tracker[$key] = true;
     }
