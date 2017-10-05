@@ -19,6 +19,11 @@ class Keeper
     protected $systemLogger;
 
     /**
+     * @var array
+     */
+    protected $tracker = [];
+
+    /**
      * @var bool
      * @Flow\InjectConfiguration(path="enabled")
      */
@@ -30,10 +35,19 @@ class Keeper
             return;
         }
 
+        $originalContextPath = $node->getContextPath();
+        $key = md5($originalContextPath . $propertyName . \serialize($newValue));
+        if (isset($this->tracker[$key]) && $this->tracker[$key] === true) {
+            $this->systemLogger->log(\vsprintf('Skip synchronization property %s from node %s', [$propertyName, $originalContextPath]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
+            return;
+        }
+
         \array_map(function (NodeInterface $nodeVariant) use ($propertyName, $newValue) {
             $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
             $nodeVariant->setProperty($propertyName, $newValue);
         }, $node->getOtherNodeVariants());
+
+        $this->tracker[$key] = true;
     }
 
     public function skip(\Closure $closure)
