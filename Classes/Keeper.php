@@ -35,7 +35,13 @@ class Keeper
             return;
         }
 
-        \array_map(function (NodeInterface $nodeVariant) use ($propertyName, $newValue) {
+        $currentDimensions = $node->getDimensions();
+        $this->systemLogger->log(\vsprintf('Synchronize property %s start in %s', [$propertyName, \json_encode($currentDimensions)]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
+
+        \array_map(function (NodeInterface $nodeVariant) use ($propertyName, $newValue, $currentDimensions) {
+            if ($nodeVariant->getDimensions() === $currentDimensions) {
+                return;
+            }
             $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
             $this->skip(function () use ($nodeVariant, $propertyName, $newValue) {
                 $nodeVariant->setProperty($propertyName, $newValue);
