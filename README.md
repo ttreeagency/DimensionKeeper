@@ -10,11 +10,9 @@ Installation
 Configuration
 -------------
 
-First, you need to edit your Node Type configuration (NodeTypes.yaml), the example below is for
-a course (Workshop) that may contain many sessions (Course Instance in the Schema.org terminology). 
-Each Session can have a dedicated Location:
+You can enable the property synching by enabling the speciic properties in the NodeType configuration. Here's an example how to enable the synching of the uri path segment and the title properties:
 
-    'Your.Package:Workshop':
+    'Your.Package:Example':
       options:
         TtreeDimensionKeeper:Properties:
           title: true
