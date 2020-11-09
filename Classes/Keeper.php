@@ -3,7 +3,7 @@ namespace Ttree\DimensionKeeper;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Log\SystemLoggerInterface;
+use Neos\Flow\Log\PsrSystemLoggerInterface;
 
 /**
  * @Flow\Scope("singleton")
@@ -13,7 +13,7 @@ class Keeper
     const CONFIGURATION_PATH = 'options.TtreeDimensionKeeper:Properties';
 
     /**
-     * @var SystemLoggerInterface
+     * @var PsrSystemLoggerInterface
      * @Flow\Inject
      */
     protected $systemLogger;
@@ -36,13 +36,13 @@ class Keeper
         }
 
         $currentDimensions = $node->getDimensions();
-        $this->systemLogger->log(\vsprintf('Synchronize property %s start in %s', [$propertyName, \json_encode($currentDimensions)]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
+        $this->systemLogger->debug(\vsprintf('Synchronize property %s start in %s', [$propertyName, \json_encode($currentDimensions)]));
 
         \array_map(function (NodeInterface $nodeVariant) use ($propertyName, $newValue, $currentDimensions) {
             if ($nodeVariant->getDimensions() === $currentDimensions) {
                 return;
             }
-            $this->systemLogger->log(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]), \LOG_DEBUG, null, 'Ttree.DimensionKeeper');
+            $this->systemLogger->debug(\vsprintf('Synchronize property %s to node variant %s', [$propertyName, $nodeVariant->getContextPath()]));
             $this->skip(function () use ($nodeVariant, $propertyName, $newValue) {
                 $nodeVariant->setProperty($propertyName, $newValue);
             });
